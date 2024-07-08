@@ -2,6 +2,7 @@
   imports = [
     (modulesPath + "/installer/cd-dvd/installation-cd-graphical-gnome.nix")
   ];
+  isoImage.squashfsCompression = "lz4";
   nix.nixPath = [
     "nixpkgs=${pkgs.path}"
   ];
