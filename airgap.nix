@@ -1,11 +1,16 @@
 { pkgs, modulesPath, lib, credential-manager, ... }: {
-  imports = [
-    (modulesPath + "/installer/cd-dvd/installation-cd-graphical-gnome.nix")
-  ];
-  isoImage.squashfsCompression = "lz4";
+  imports = [ ];
+  powerManagement.enable = true;
+  powerManagement.cpuFreqGovernor = "performance";
   nix.nixPath = [
     "nixpkgs=${pkgs.path}"
   ];
+
+  # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+  boot.initrd.systemd.enable = true;
+  boot.initrd.systemd.emergencyAccess = true;
 
   nix.extraOptions = ''
     experimental-features = nix-command flakes
@@ -27,7 +32,6 @@
   ];
 
   boot.kernelModules = [ "kvm-intel" ];
-  boot.supportedFilesystems = [ "zfs" ];
   nixpkgs.config.allowUnfree = true;
   services.udev.extraRules = ''
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="2581", ATTRS{idProduct}=="1b7c", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
@@ -55,6 +59,7 @@
   environment.systemPackages = with pkgs; [
     credential-manager.packages.x86_64-linux.signing-tool
     credential-manager.packages.x86_64-linux.orchestrator-cli
+    glibc
     termite
     encfs
     chromium
