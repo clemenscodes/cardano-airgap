@@ -430,16 +430,17 @@
         "flake-compat": "flake-compat_8",
         "nix": "nix_4",
         "nixpkgs": [
+          "credential-manager",
           "nixpkgs"
         ],
         "pre-commit-hooks": "pre-commit-hooks"
       },
       "locked": {
-        "lastModified": 1720180409,
-        "narHash": "sha256-Y+2uP9hy06DFwIBhveHnKaDblZS4lO+Z/GacnwKPpps=",
+        "lastModified": 1720450778,
+        "narHash": "sha256-H4CcD1ZeaHTluZNbFMN6d4L1peG5LzJTp2bJKShkjGc=",
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "7b3ed618571f0d14655b05f7b1c6ef600904383a",
+        "rev": "c5cab22d9750a9aa88aa0946849903fb619be954",
         "type": "github"
       },
       "original": {
@@ -515,6 +516,7 @@
     "disko": {
       "inputs": {
         "nixpkgs": [
+          "credential-manager",
           "nixpkgs"
         ]
       },
@@ -2626,22 +2628,6 @@
         "type": "github"
       }
     },
-    "nixpkgs_13": {
-      "locked": {
-        "lastModified": 1720386169,
-        "narHash": "sha256-NGKVY4PjzwAa4upkGtAMz1npHGoRzWotlSnVlqI40mo=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "194846768975b7ad2c4988bdb82572c00222c0d7",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-24.05",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1654807842,
@@ -2958,7 +2944,10 @@
         "credential-manager": "credential-manager",
         "devenv": "devenv",
         "disko": "disko",
-        "nixpkgs": "nixpkgs_13",
+        "nixpkgs": [
+          "credential-manager",
+          "nixpkgs"
+        ],
         "systems": "systems_8"
       }
     },

@@ -1,12 +1,12 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    credential-manager.url = "github:IntersectMBO/credential-manager?ref=signing-tool";
+    nixpkgs.follows = "credential-manager/nixpkgs";
     systems.url = "github:nix-systems/default";
     devenv.url = "github:cachix/devenv";
-    devenv.inputs.nixpkgs.follows = "nixpkgs";
-    credential-manager.url = "github:IntersectMBO/credential-manager?ref=signing-tool";
+    devenv.inputs.nixpkgs.follows = "credential-manager/nixpkgs";
     disko.url = "github:nix-community/disko";
-    disko.inputs.nixpkgs.follows = "nixpkgs";
+    disko.inputs.nixpkgs.follows = "credential-manager/nixpkgs";
   };
 
   nixConfig = {
@@ -37,6 +37,7 @@
                 {
                   # https://devenv.sh/reference/options/
                   packages = [
+                    pkgs.coreutils
                     disko.packages.${system}.disko-install
                     (pkgs.writeShellScriptBin "qemu-system-x86_64-uefi" ''
                       qemu-system-x86_64 \
@@ -45,9 +46,9 @@
                     '')
                   ];
                   languages.nix.enable = true;
-                  pre-commit.hooks = {
-                    nixpkgs-fmt.enable = true;
-                  };
+                  # pre-commit.hooks = {
+                  #   nixpkgs-fmt.enable = true;
+                  # };
                 }
               ];
             };

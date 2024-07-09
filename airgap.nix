@@ -62,8 +62,8 @@
   '';
   services.xserver.enable = true;
   services.xserver.displayManager.gdm.enable = true;
-  services.displayManager.autoLogin.enable = true;
-  services.displayManager.autoLogin.user = "cc-signer";
+  services.xserver.displayManager.autoLogin.enable = true;
+  services.xserver.displayManager.autoLogin.user = "cc-signer";
   services.xserver.desktopManager.gnome.enable = true;
   systemd.services."getty@tty1".enable = false;
   systemd.services."autovt@tty1".enable = false;
@@ -77,6 +77,7 @@
   environment.systemPackages = with pkgs; [
     credential-manager.packages.x86_64-linux.signing-tool
     credential-manager.packages.x86_64-linux.orchestrator-cli
+    gnome.adwaita-icon-theme
     glibc
     termite
     encfs
