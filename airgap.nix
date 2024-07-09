@@ -31,6 +31,19 @@
     "usb-storage" # needed to mount usb as a storage device
   ];
 
+  users.defaultUserShell = pkgs.bash;
+  users.mutableUsers = false;
+  users.allowNoPasswordLogin = true;
+
+  users.users.cc-signer = {
+    createHome = true;
+    extraGroups = [ "wheel" ];
+    group = "users";
+    home = "/home/cc-signer";
+    uid = 1234;
+    isNormalUser = true;
+  };
+
   boot.kernelModules = [ "kvm-intel" ];
   nixpkgs.config.allowUnfree = true;
   services.udev.extraRules = ''
@@ -49,7 +62,12 @@
   '';
   services.xserver.enable = true;
   services.xserver.displayManager.gdm.enable = true;
+  services.displayManager.autoLogin.enable = true;
+  services.displayManager.autoLogin.user = "cc-signer";
   services.xserver.desktopManager.gnome.enable = true;
+  systemd.services."getty@tty1".enable = false;
+  systemd.services."autovt@tty1".enable = false;
+  security.sudo.wheelNeedsPassword = false;
   networking = {
     wireless.enable = lib.mkForce false;
     hostName = "cc-airgap";
