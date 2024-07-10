@@ -38,10 +38,14 @@
                   # https://devenv.sh/reference/options/
                   packages = [
                     pkgs.coreutils
-                    disko.packages.${system}.disko-install
-                    (pkgs.writeShellScriptBin "qemu-system-x86_64-uefi" ''
+                    disko.packages.${system}.disko
+                    (pkgs.writeShellScriptBin "qemu-run-iso" ''
                       qemu-system-x86_64 \
-                        -bios ${pkgs.OVMF.fd}/FV/OVMF.fd \
+                        -enable-kvm \
+                        -cpu host \
+                        -smp 2 \
+                        -m 4G \
+                        -cdrom result/iso/nixos-*.iso \
                         "$@"
                     '')
                   ];
@@ -54,58 +58,13 @@
             };
           });
 
-      nixosConfigurations.airgap = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.airgap-boot = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
-        modules = [
-          ./airgap.nix
-          disko.nixosModules.disko
-          {
-            disko.devices = {
-              disk.main = {
-                device = "/dev/disk/by-id/some-disk-id";
-                type = "disk";
-                content = {
-                  type = "gpt";
-                  partitions = {
-                    ESP = {
-                      type = "EF00";
-                      size = "500M";
-                      content = {
-                        type = "filesystem";
-                        format = "vfat";
-                        mountOptions = [ "umask=0077" ];
-                        mountpoint = "/boot";
-                      };
-                    };
-                    public = {
-                      size = "2G";
-                      content = {
-                        type = "filesystem";
-                        format = "ext4";
-                        mountpoint = "/public";
-                      };
-                    };
-                    luks = {
-                      size = "100%";
-                      content = {
-                        type = "luks";
-                        name = "crypted";
-                        settings.allowDiscards = true;
-                        askPassword = true;
-                        content = {
-                          type = "filesystem";
-                          format = "ext4";
-                          mountpoint = "/";
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          }
-        ];
-        specialArgs = inputs;
+        modules = [ ./airgap-boot.nix ];
+
+        specialArgs = { inherit inputs; };
       };
+
+      diskoConfigurations.airgap-data = import ./airgap-data.nix;
     };
 }
