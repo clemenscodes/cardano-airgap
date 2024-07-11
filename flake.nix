@@ -30,57 +30,61 @@
     ];
   };
 
-  outputs = { self, nixpkgs, devenv, systems, disko, ... } @ inputs:
-    let
-      forEachSystem = nixpkgs.lib.genAttrs (import systems);
-    in
-    {
-      # For direnv nix version shell evaluation
-      lib = nixpkgs.lib;
+  outputs = {
+    self,
+    nixpkgs,
+    devenv,
+    systems,
+    disko,
+    ...
+  } @ inputs: let
+    forEachSystem = nixpkgs.lib.genAttrs (import systems);
+  in {
+    # For direnv nix version shell evaluation
+    lib = nixpkgs.lib;
 
-      devShells = forEachSystem
-        (system:
-          let
-            pkgs = nixpkgs.legacyPackages.${system};
-          in
-          {
-            default = devenv.lib.mkShell {
-              inherit inputs pkgs;
-              modules = [
-                {
-                  # https://devenv.sh/reference/options/
-                  packages = [
-                    pkgs.coreutils
-                    disko.packages.${system}.disko
-                    (pkgs.writeShellScriptBin "qemu-run-iso" ''
-                      qemu-system-x86_64 \
-                        -enable-kvm \
-                        -cpu host \
-                        -smp 2 \
-                        -m 4G \
-                        -cdrom result/iso/nixos-*.iso \
-                        "$@"
-                    '')
-                  ];
-
-                  languages.nix.enable = true;
-
-                  pre-commit.hooks = {
-                    alejandra.enable = true;
-                    deadnix.enable = true;
-                    statix.enable = true;
-                  };
-                }
+    devShells =
+      forEachSystem
+      (system: let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in {
+        default = devenv.lib.mkShell {
+          inherit inputs pkgs;
+          modules = [
+            {
+              # https://devenv.sh/reference/options/
+              packages = [
+                pkgs.coreutils
+                disko.packages.${system}.disko
+                (pkgs.writeShellScriptBin "qemu-run-iso" ''
+                  qemu-system-x86_64 \
+                    -enable-kvm \
+                    -cpu host \
+                    -smp 2 \
+                    -m 4G \
+                    -cdrom result/iso/nixos-*.iso \
+                    "$@"
+                '')
               ];
-            };
-          });
 
-      nixosConfigurations.airgap-boot = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [ ./airgap-boot.nix ];
-        specialArgs = { inherit inputs; };
-      };
+              languages.nix.enable = true;
 
-      diskoConfigurations.airgap-data = import ./airgap-data.nix;
+              pre-commit.hooks = {
+                alejandra.enable = true;
+                deadnix.enable = true;
+                statix.enable = true;
+              };
+            }
+          ];
+        };
+      });
+
+    nixosConfigurations.airgap-boot = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [./airgap-boot.nix];
+      specialArgs = {inherit inputs;};
     };
+
+    diskoConfigurations.airgap-data = import ./airgap-data.nix;
+  };
 }

@@ -1,4 +1,4 @@
-{ device ? "/dev/disk/AIRGAP_DATA_DEVICE_UPDATE_ME", ... }: {
+{device ? "/dev/disk/AIRGAP_DATA_DEVICE_UPDATE_ME", ...}: {
   disko.devices = {
     disk.main = {
       inherit device;
