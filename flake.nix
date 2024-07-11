@@ -1,12 +1,22 @@
 {
   inputs = {
-    credential-manager.url = "github:IntersectMBO/credential-manager?ref=signing-tool";
-    nixpkgs.follows = "credential-manager/nixpkgs";
+    # Nixpkgs 24.05 required for working devenv pre-commit hook nix functionality
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+
+    # Required image signing tooling
+    credential-manager.url = "github:IntersectMBO/credential-manager/signing-tool";
     systems.url = "github:nix-systems/default";
+
+    # For easy language and hook support
     devenv.url = "github:cachix/devenv";
-    devenv.inputs.nixpkgs.follows = "credential-manager/nixpkgs";
+    devenv.inputs.nixpkgs.follows = "nixpkgs";
+
+    # For declarative block device provisioning
     disko.url = "github:nix-community/disko";
-    disko.inputs.nixpkgs.follows = "credential-manager/nixpkgs";
+    disko.inputs.nixpkgs.follows = "nixpkgs";
+
+    # For fetch-closure shrunk release packages with minimal eval time and dependency sizes
+    capkgs.url = "github:input-output-hk/capkgs";
   };
 
   nixConfig = {
@@ -25,6 +35,9 @@
       forEachSystem = nixpkgs.lib.genAttrs (import systems);
     in
     {
+      # For direnv nix version shell evaluation
+      lib = nixpkgs.lib;
+
       devShells = forEachSystem
         (system:
           let
@@ -49,10 +62,14 @@
                         "$@"
                     '')
                   ];
+
                   languages.nix.enable = true;
-                  # pre-commit.hooks = {
-                  #   nixpkgs-fmt.enable = true;
-                  # };
+
+                  pre-commit.hooks = {
+                    alejandra.enable = true;
+                    deadnix.enable = true;
+                    statix.enable = true;
+                  };
                 }
               ];
             };
@@ -61,7 +78,6 @@
       nixosConfigurations.airgap-boot = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [ ./airgap-boot.nix ];
-
         specialArgs = { inherit inputs; };
       };
 
