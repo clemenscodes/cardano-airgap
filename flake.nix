@@ -31,7 +31,6 @@
   };
 
   outputs = {
-    self,
     nixpkgs,
     devenv,
     systems,
@@ -41,7 +40,7 @@
     forEachSystem = nixpkgs.lib.genAttrs (import systems);
   in {
     # For direnv nix version shell evaluation
-    lib = nixpkgs.lib;
+    inherit (nixpkgs) lib;
 
     devShells =
       forEachSystem
