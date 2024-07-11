@@ -1,6 +1,6 @@
 {
   inputs = {
-    # Nixpkgs 24.05 required for working devenv pre-commit hook nix functionality
+    # Nixpkgs 24.05 for latest gnome image and devenv hooks
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
 
     # Required image signing tooling
@@ -31,6 +31,7 @@
   };
 
   outputs = {
+    self,
     nixpkgs,
     devenv,
     systems,
@@ -55,13 +56,29 @@
               packages = [
                 pkgs.coreutils
                 disko.packages.${system}.disko
+
                 (pkgs.writeShellScriptBin "qemu-run-iso" ''
-                  qemu-system-x86_64 \
-                    -enable-kvm \
+                  if [ -s result/iso/nixos-*.iso ]; then
+                    echo "Symlinking the existing iso image for qemu:"
+                    ln -sfv result/iso/nixos-*.iso result-iso
+                    echo
+                  else
+                    echo "No iso file exists to run, please build one first, example:"
+                    echo "  nix build -L .#nixosConfigurations.airgap-boot.config.system.build.isoImage"
+                    exit
+                  fi
+
+                  if [ "$#" = 0 ]; then
+                    echo "Not passing through any host devices; see the README.md if you would like to do that."
+                  fi
+
+                  qemu-kvm \
                     -cpu host \
                     -smp 2 \
                     -m 4G \
-                    -cdrom result/iso/nixos-*.iso \
+                    -drive file=result-iso,format=raw,if=none,media=cdrom,id=drive-cd1,readonly=on \
+                    -device ahci,id=achi0 \
+                    -device ide-cd,bus=achi0.0,drive=drive-cd1,id=cd1,bootindex=1 \
                     "$@"
                 '')
               ];
@@ -81,7 +98,10 @@
     nixosConfigurations.airgap-boot = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [./airgap-boot.nix];
-      specialArgs = {inherit inputs;};
+      specialArgs = {
+        inherit self;
+        system = "x86_64-linux";
+      };
     };
 
     diskoConfigurations.airgap-data = import ./airgap-data.nix;

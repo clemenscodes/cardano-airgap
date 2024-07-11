@@ -1,16 +1,18 @@
 {
-  config,
-  pkgs,
-  modulesPath,
   lib,
-  credential-manager,
+  modulesPath,
+  pkgs,
+  self,
+  system,
   ...
-}: {
+}: let
+  inputPkg = input: pkg: self.inputs.${input}.packages.${system}.${pkg};
+in {
   imports = [(modulesPath + "/installer/cd-dvd/installation-cd-graphical-gnome.nix")];
 
   boot = {
     initrd.availableKernelModules = [
-      # support for various usb hubs
+      # Support for various usb hubs
       "ohci_pci"
       "ohci_hcd"
       "ehci_pci"
@@ -18,8 +20,11 @@
       "xhci_pci"
       "xhci_hcd"
 
-      "uas" # may be needed in some situations
-      "usb-storage" # needed to mount usb as a storage device
+      # May be needed in some situations
+      "uas"
+
+      # Needed to mount usb as a storage device
+      "usb-storage"
     ];
 
     kernelModules = ["kvm-intel"];
@@ -32,34 +37,48 @@
 
   documentation.info.enable = false;
 
-  environment.systemPackages = with pkgs; [
-    chromium
-    credential-manager.packages.x86_64-linux.orchestrator-cli
-    credential-manager.packages.x86_64-linux.signing-tool
-    encfs
-    glibc
-    gnome.adwaita-icon-theme
-    gnupg
-    jq
-    sqlite-interactive
-    termite
-    vim
-  ];
+  environment = {
+    # Embed this flake source in the iso to re-use the disko or other configuration
+    etc.flake.source = self.outPath;
 
-  # To speed up testing -- comment out when ready to distribute for a smaller squashfs
-  isoImage.squashfsCompression = "gzip -Xcompression-level 1";
+    systemPackages = with pkgs; [
+      (inputPkg "capkgs" "cardano-address-cardano-foundation-cardano-wallet-v2024-07-07-29e3aef")
+      (inputPkg "capkgs" "cardano-cli-input-output-hk-cardano-node-9-0-0-2820a63")
+      (inputPkg "credential-manager" "orchestrator-cli")
+      (inputPkg "credential-manager" "signing-tool")
+      (inputPkg "disko" "disko")
+
+      glibc
+      gnome.adwaita-icon-theme
+      gnupg
+      jq
+      neovim
+      sqlite-interactive
+      usbutils
+    ];
+  };
+
+  # Disable squashfs for testing only
+  # Comment this out when ready to distribute
+  isoImage.squashfsCompression = (lib.warn "Generating a testing only ISO with compression disabled") null;
 
   nix = {
-    extraOptions = "experimental-features = nix-command flakes";
+    extraOptions = ''
+      experimental-features = nix-command flakes
+      accept-flake-config = true
+    '';
+
     nixPath = ["nixpkgs=${pkgs.path}"];
+    settings.trusted-users = ["cc-signer"];
   };
 
   nixpkgs.config.allowUnfree = true;
 
   networking = {
-    wireless.enable = lib.mkForce false;
-    hostName = "cc-airgap";
     hostId = "ffffffff";
+    hostName = "cc-airgap";
+    useDHCP = false;
+    wireless.enable = lib.mkForce false;
   };
 
   programs = {
@@ -69,6 +88,8 @@
   };
 
   services = {
+    displayManager.autoLogin.user = lib.mkForce "cc-signer";
+
     udev.extraRules = ''
       SUBSYSTEMS=="usb", ATTRS{idVendor}=="2581", ATTRS{idProduct}=="1b7c", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
       SUBSYSTEMS=="usb", ATTRS{idVendor}=="2581", ATTRS{idProduct}=="2b7c", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
@@ -83,8 +104,6 @@
       KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0660", GROUP="plugdev", ATTRS{idVendor}=="2581"
       ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{authorized}=="0", ATTR{authorized}="1"
     '';
-
-    xserver.displayManager.autoLogin.user = lib.mkForce "cc-signer";
   };
 
   systemd.user.services.dconf-defaults = {
