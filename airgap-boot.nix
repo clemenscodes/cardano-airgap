@@ -75,6 +75,8 @@ in {
   nixpkgs.config.allowUnfree = true;
 
   networking = {
+    enableIPv6 = false;
+    interfaces = lib.mkForce {};
     hostId = "ffffffff";
     hostName = "cc-airgap";
     useDHCP = false;

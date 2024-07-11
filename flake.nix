@@ -55,6 +55,7 @@
               # https://devenv.sh/reference/options/
               packages = [
                 pkgs.coreutils
+                pkgs.cryptsetup
                 disko.packages.${system}.disko
 
                 (pkgs.writeShellScriptBin "qemu-run-iso" ''
@@ -72,10 +73,12 @@
                     echo "Not passing through any host devices; see the README.md if you would like to do that."
                   fi
 
+                  # Don't allow qemu to network an airgapped machine test with `-nic none`
                   qemu-kvm \
                     -cpu host \
                     -smp 2 \
                     -m 4G \
+                    -nic none \
                     -drive file=result-iso,format=raw,if=none,media=cdrom,id=drive-cd1,readonly=on \
                     -device ahci,id=achi0 \
                     -device ide-cd,bus=achi0.0,drive=drive-cd1,id=cd1,bootindex=1 \

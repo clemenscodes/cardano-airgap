@@ -12,49 +12,31 @@
               type = "filesystem";
               format = "ext4";
               mountpoint = "/public";
-            };
-          };
-
-          zfs = {
-            size = "100%";
-            content = {
-              type = "zfs";
-              pool = "airgap-encrypted";
+              # Will label the public partion and cause gnome to auto-mount
+              # at the path of: /run/media/public with cc-signer uid:gid
+              extraArgs = ["-L public" "-E root_owner=1234:100"];
             };
           };
 
           # Alternative if we have difficulty with ZFS
-          # luks = {
-          #   size = "100%";
-          #   content = {
-          #     type = "luks";
-          #     name = "crypted";
-          #     settings.allowDiscards = true;
-          #     askPassword = true;
-          #     content = {
-          #       type = "filesystem";
-          #       format = "ext4";
-          #       mountpoint = "/";
-          #     };
-          #   };
-          # };
+          luks = {
+            size = "100%";
+            content = {
+              type = "luks";
+              name = "crypted";
+              settings.allowDiscards = true;
+              askPassword = true;
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = "/encrypted";
+                # This will label the encrypted partion and cause gnome to auto-mount
+                # at the path of: /run/media/encrypted with cc-signer uid:gid
+                extraArgs = ["-L encrypted" "-E root_owner=1234:100"];
+              };
+            };
+          };
         };
-      };
-    };
-
-    zpool = {
-      airgap-encrypted = {
-        name = "airgap-encrypted";
-        type = "zpool";
-        rootFsOptions = {
-          compression = "lz4";
-          "com.sun:auto-snapshot" = "false";
-          acltype = "posixacl";
-          xattr = "sa";
-          encryption = "aes-256-gcm";
-          keyformat = "passphrase";
-        };
-        mountpoint = "/airgap-encrypted";
       };
     };
   };
