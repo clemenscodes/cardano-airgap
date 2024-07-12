@@ -6,6 +6,18 @@
   system,
   ...
 }: let
+  inherit
+    (self.imageParameters)
+    hostId
+    hostName
+    documentsDir
+    secretsDir
+    signingUser
+    signingUserUid
+    signingUserGroup
+    testImage
+    ;
+
   inputPkg = input: pkg: self.inputs.${input}.packages.${system}.${pkg};
 in {
   imports = [(modulesPath + "/installer/cd-dvd/installation-cd-graphical-gnome.nix")];
@@ -38,8 +50,14 @@ in {
   documentation.info.enable = false;
 
   environment = {
-    # Embed this flake source in the iso to re-use the disko or other configuration
-    etc.flake.source = self.outPath;
+    etc = {
+      # Embed this flake source in the iso to re-use the disko or other configuration
+      flake.source = self.outPath;
+
+      "signing-tool-config.json".source = builtins.toFile "signing-tool-config.json" (builtins.toJSON {
+        inherit documentsDir secretsDir;
+      });
+    };
 
     systemPackages = with pkgs; [
       (inputPkg "capkgs" "cardano-address-cardano-foundation-cardano-wallet-v2024-07-07-29e3aef")
@@ -48,19 +66,25 @@ in {
       (inputPkg "credential-manager" "signing-tool")
       (inputPkg "disko" "disko")
 
+      self.packages.${system}.signing-tool-with-config
+      self.packages.${system}.unmount-airgap-data
+
+      cryptsetup
       glibc
       gnome.adwaita-icon-theme
       gnupg
       jq
+      lvm2
       neovim
+      openssl
       sqlite-interactive
       usbutils
     ];
   };
 
   # Disable squashfs for testing only
-  # Comment this out when ready to distribute
-  isoImage.squashfsCompression = (lib.warn "Generating a testing only ISO with compression disabled") null;
+  # Set the flake.nix `imageParameters.testImage = false;` when ready to build the distribution image
+  isoImage.squashfsCompression = lib.mkIf testImage ((lib.warn "Generating a testing only ISO with compression disabled") null);
 
   nix = {
     extraOptions = ''
@@ -69,17 +93,17 @@ in {
     '';
 
     nixPath = ["nixpkgs=${pkgs.path}"];
-    settings.trusted-users = ["cc-signer"];
+    settings.trusted-users = [signingUser];
   };
 
   nixpkgs.config.allowUnfree = true;
 
   networking = {
-    enableIPv6 = false;
+    inherit hostId hostName;
+
+    enableIPv6 = lib.mkForce false;
     interfaces = lib.mkForce {};
-    hostId = "ffffffff";
-    hostName = "cc-airgap";
-    useDHCP = false;
+    useDHCP = lib.mkForce false;
     wireless.enable = lib.mkForce false;
   };
 
@@ -90,7 +114,7 @@ in {
   };
 
   services = {
-    displayManager.autoLogin.user = lib.mkForce "cc-signer";
+    displayManager.autoLogin.user = lib.mkForce signingUser;
 
     udev.extraRules = ''
       SUBSYSTEMS=="usb", ATTRS{idVendor}=="2581", ATTRS{idProduct}=="1b7c", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
@@ -169,13 +193,19 @@ in {
     users.cc-signer = {
       createHome = true;
       extraGroups = ["wheel"];
-      group = "users";
-      home = "/home/cc-signer";
-      uid = 1234;
+      group = signingUserGroup;
+      home = "/home/${signingUser}";
+      uid = signingUserUid;
       isNormalUser = true;
     };
   };
 
-  # To address build time warn
-  system.stateVersion = lib.versions.majorMinor lib.version;
+  system = {
+    # This works to enable disko builds within the image,
+    # but adds significant eval time and size for image generation.
+    # extraDependencies = [(self.packages.${system}.flakeClosureRef self)];
+
+    # To address build time warn
+    stateVersion = lib.versions.majorMinor lib.version;
+  };
 }

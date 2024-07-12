@@ -35,6 +35,7 @@
     nixpkgs,
     devenv,
     systems,
+    credential-manager,
     disko,
     ...
   } @ inputs: let
@@ -42,6 +43,28 @@
   in {
     # For direnv nix version shell evaluation
     inherit (nixpkgs) lib;
+
+    # General image parameters used throughout nix code
+    imageParameters = rec {
+      # Set to false when ready to generate and distrubte an image
+      testImage = true;
+
+      publicVolName = "public";
+      encryptedVolName = "encrypted";
+
+      documentsDir = "/run/media/${signingUser}/${publicVolName}";
+      secretsDir = "/run/media/${signingUser}/${encryptedVolName}";
+
+      hostId = "ffffffff";
+      hostName = "cc-airgap";
+
+      signingUser = "cc-signer";
+      signingUserUid = 1234;
+      signingUserGid = 100;
+      signingUserGroup = "users";
+    };
+
+    packages = forEachSystem (system: import ./packages.nix self system);
 
     devShells =
       forEachSystem
@@ -52,40 +75,16 @@
           inherit inputs pkgs;
           modules = [
             {
-              # https://devenv.sh/reference/options/
               packages = [
                 pkgs.coreutils
                 pkgs.cryptsetup
                 disko.packages.${system}.disko
-
-                (pkgs.writeShellScriptBin "qemu-run-iso" ''
-                  if [ -s result/iso/nixos-*.iso ]; then
-                    echo "Symlinking the existing iso image for qemu:"
-                    ln -sfv result/iso/nixos-*.iso result-iso
-                    echo
-                  else
-                    echo "No iso file exists to run, please build one first, example:"
-                    echo "  nix build -L .#nixosConfigurations.airgap-boot.config.system.build.isoImage"
-                    exit
-                  fi
-
-                  if [ "$#" = 0 ]; then
-                    echo "Not passing through any host devices; see the README.md if you would like to do that."
-                  fi
-
-                  # Don't allow qemu to network an airgapped machine test with `-nic none`
-                  qemu-kvm \
-                    -cpu host \
-                    -smp 2 \
-                    -m 4G \
-                    -nic none \
-                    -drive file=result-iso,format=raw,if=none,media=cdrom,id=drive-cd1,readonly=on \
-                    -device ahci,id=achi0 \
-                    -device ide-cd,bus=achi0.0,drive=drive-cd1,id=cd1,bootindex=1 \
-                    "$@"
-                '')
+                credential-manager.packages.${system}.orchestrator-cli
+                credential-manager.packages.${system}.signing-tool
+                self.packages.${system}.qemu-run-iso
               ];
 
+              # https://devenv.sh/reference/options/
               languages.nix.enable = true;
 
               pre-commit.hooks = {
@@ -107,6 +106,6 @@
       };
     };
 
-    diskoConfigurations.airgap-data = import ./airgap-data.nix;
+    diskoConfigurations.airgap-data = import ./airgap-data.nix self;
   };
 }

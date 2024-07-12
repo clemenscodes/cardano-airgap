@@ -32,7 +32,4 @@ disko -m disko --dry-run -f .#airgap-data --argstr device "$YOUR_AIRGAP_DATA_DRI
 
 # If satisfied, run it -- this drive will be wiped, partitioned, formatted and encrypted!:
 sudo disko -m disko -f .#airgap-data --argstr device "$YOUR_AIRGAP_DATA_DRIVE"
-
-# Export the thumbdrive from the zfs pool
-sudo zpool export airgap-encrypted
 ```

@@ -1,4 +1,14 @@
-{device ? "/dev/disk/AIRGAP_DATA_DEVICE_UPDATE_ME", ...}: {
+self: {device ? "/dev/disk/AIRGAP_DATA_DEVICE_UPDATE_ME", ...}: let
+  inherit
+    (self.imageParameters)
+    signingUserUid
+    signingUserGid
+    publicVolName
+    encryptedVolName
+    ;
+
+  uidGid = "${toString signingUserUid}:${toString signingUserGid}";
+in {
   disko.devices = {
     disk.main = {
       inherit device;
@@ -11,28 +21,23 @@
             content = {
               type = "filesystem";
               format = "ext4";
-              mountpoint = "/public";
-              # Will label the public partion and cause gnome to auto-mount
-              # at the path of: /run/media/public with cc-signer uid:gid
-              extraArgs = ["-L public" "-E root_owner=1234:100"];
+              extraArgs = ["-L ${publicVolName}" "-E root_owner=${uidGid}"];
             };
           };
 
-          # Alternative if we have difficulty with ZFS
           luks = {
             size = "100%";
             content = {
               type = "luks";
-              name = "crypted";
+              name = encryptedVolName;
               settings.allowDiscards = true;
               askPassword = true;
+              extraFormatArgs = ["--label ${encryptedVolName}"];
+              postMountHook = "dmsetup ls --target crypt --exec 'cryptsetup close' 2> /dev/null";
               content = {
                 type = "filesystem";
                 format = "ext4";
-                mountpoint = "/encrypted";
-                # This will label the encrypted partion and cause gnome to auto-mount
-                # at the path of: /run/media/encrypted with cc-signer uid:gid
-                extraArgs = ["-L encrypted" "-E root_owner=1234:100"];
+                extraArgs = ["-L ${encryptedVolName}" "-E root_owner=${uidGid}"];
               };
             };
           };
