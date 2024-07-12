@@ -72,7 +72,7 @@ in {
         fi
       else
         echo "Dry run request detected -- no actual formatting actions will be carried out."
-        echo "The script path printed below can be reviewed prior to running for real."
+        echo "The final script path printed below can be reviewed prior to running for real."
         echo
       fi
 
@@ -142,22 +142,33 @@ in {
 
   unmount-airgap-data = pkgs.writeShellApplication {
     name = "unmount-airgap-data";
-    runtimeInputs = with pkgs; [cryptsetup util-linux];
+    runtimeInputs = with pkgs; [cryptsetup gnugrep util-linux];
 
     text = ''
+      UNMOUNT() {
+        MOUNTPOINT="$1"
+        if df | grep --quiet "$MOUNTPOINT"; then
+          sudo umount --verbose "$MOUNTPOINT" || true
+        else
+          echo "Not currently mounted: $MOUNTPOINT"
+        fi
+      }
+
       echo "Unmounting:"
-      sudo umount --verbose ${documentsDir} || true
-      sudo umount --verbose ${secretsDir} || true
+      UNMOUNT ${documentsDir}
+      UNMOUNT ${secretsDir}
       echo
 
       echo "Closing crypted luks volumes."
       sudo bash -c 'dmsetup ls --target crypt --exec "cryptsetup close"' || true
+      echo
 
       echo "Syncing."
       sync || true
 
       echo
-      echo "If no unexpected errors are seen above, it is now safe to remove the airgap-data device."
+      echo "If no unexpected errors are seen above,"
+      echo "then it is safe to remove the airgap-data device."
     '';
   };
 }

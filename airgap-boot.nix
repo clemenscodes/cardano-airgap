@@ -106,7 +106,10 @@ in {
     '';
 
     nixPath = ["nixpkgs=${pkgs.path}"];
-    settings.trusted-users = [signingUser];
+    settings = {
+      substituters = lib.mkForce [];
+      trusted-users = [signingUser];
+    };
   };
 
   nixpkgs.config.allowUnfree = true;
