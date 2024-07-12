@@ -21,15 +21,28 @@ sudo qemu-run-iso -device nec-usb-xhci,id=xhci -device usb-host,vendorid=0x0781,
 sudo qemu-run-iso -device nec-usb-xhci,id=xhci -device usb-host,hostbus=1,hostaddr=30
 ```
 
-## Create the airgap-data thumbdrive:
+## Fomat the airgap-data device:
+WARNING -- BE ABSOLUTELY SURE YOU HAVE THE CORRECT DEVICE LISTED AS THIS DRIVE WILL BE WIPED!
+
+WARNING -- Do a dry first and review the output script if desired.
+
+WARNING -- The device should be at least 16 GB in size or the format may fail.
+
+Below, `$YOUR_AIRGAP_DATA_DRIVE` is the path to the airgap data device,
+which may be something like: `/dev/sdb`.
+
+### From within the airgap boot image:
 ```bash
-# WARNING -- BE ABSOLUTELY SURE YOU HAVE THE CORRECT DEVICE LISTED AS THIS DRIVE WILL BE WIPED!
-# WARNING -- Do a dry first if desired and cat the resulting output script
-#
-# Here, `$YOUR_AIRGAP_DATA_DRIVE` is the path to the airgap data thumbdrive,
-# which may be something like: /dev/sdb
+format-airgap-data --dry-run --argstr device "$YOUR_AIRGAP_DATA_DRIVE"
+
+# If satisfied with the dry run script, proceed with the formatting:
+format-airgap-data --argstr device "$YOUR_AIRGAP_DATA_DRIVE"
+```
+
+### From the flake devShell of a networked machine:
+```bash
 disko -m disko --dry-run -f .#airgap-data --argstr device "$YOUR_AIRGAP_DATA_DRIVE"
 
-# If satisfied, run it -- this drive will be wiped, partitioned, formatted and encrypted!:
+# If satisfied with the dry run script, proceed with the formatting:
 sudo disko -m disko -f .#airgap-data --argstr device "$YOUR_AIRGAP_DATA_DRIVE"
 ```

@@ -1,10 +1,89 @@
 self: system: let
-  inherit (self.imageParameters) documentsDir secretsDir;
+  inherit (self.imageParameters) documentsDir etcFlakePath secretsDir;
   inherit (builtins) attrValues;
   inherit (self.lib) concatMap concatStringsSep unique;
 
   pkgs = self.inputs.nixpkgs.legacyPackages.${system};
 in {
+  format-airgap-data = pkgs.writeShellApplication {
+    name = "format-airgap-data";
+    runtimeInputs = with pkgs; [
+      self.inputs.disko.packages.${system}.disko
+      usbutils
+      util-linux
+    ];
+
+    text = ''
+      ARGS=("$@")
+
+      PRINT_HELP() {
+        echo "Command usage:"
+        echo "  format-airgap-data [--dry-run] --argstr device \"\$YOUR_AIRGAP_DATA_DRIVE\" [extra-options]"
+        echo
+        echo "Where:"
+        echo "\$YOUR_AIRGAP_DATA_DRIVE is the path to the airgap data"
+        echo "drive, which may be something like: /dev/sda"
+        echo
+        echo "The device being formatted should be at least 16 GB in size or the format may fail."
+        echo
+        echo "[extra-options] may be additional options as accepted by disko"
+        echo "These can be viewed with the command: disko --help"
+        echo
+        echo "Commands which can help you identify the proper drive to format are:"
+        echo
+        echo "lsblk -o +label:"
+        lsblk -o +label
+        echo
+        echo "lsusb:"
+        lsusb
+        echo
+        exit
+      }
+
+      DRY_RUN="false"
+      if [ "$#" = "0" ]; then
+        PRINT_HELP
+      elif [[ " ''${ARGS[*]} " =~ [[:space:]]-h[[:space:]] ]]; then
+        PRINT_HELP
+      elif [[ " ''${ARGS[*]} " =~ [[:space:]]--help[[:space:]] ]]; then
+        PRINT_HELP
+      elif [[ ! " ''${ARGS[*]} " =~ [[:space:]]--argstr[[:space:]]device[[:space:]] ]]; then
+        PRINT_HELP
+      elif [[ " ''${ARGS[*]} " =~ [[:space:]]--dry-run[[:space:]] ]]; then
+        DRY_RUN="true"
+      fi
+
+      for i in "''${!ARGS[@]}"; do
+       if [ "''${ARGS[$i]}" = "device" ]; then
+         if [ "$#" -lt "$((i + 2))" ]; then
+           PRINT_HELP
+         fi
+         DEVICE=''${ARGS[$i + 1]};
+       fi
+      done
+
+      if [ "$DRY_RUN" = "false" ]; then
+        echo "WARNING: Device $DEVICE is about to be completely wiped and formatted!"
+        read -p "Do you wish to proceed [yY]? " -n 1 -r
+        echo
+        if ! [[ $REPLY =~ ^[Yy]$ ]]; then
+          echo "Aborting."
+          exit
+        fi
+      else
+        echo "Dry run request detected -- no actual formatting actions will be carried out."
+        echo "The script path printed below can be reviewed prior to running for real."
+        echo
+      fi
+
+      sudo disko \
+      -m disko \
+      /etc/${etcFlakePath}/airgap-disko.nix \
+      --arg substitute false \
+      "$@"
+    '';
+  };
+
   flakeClosureRef = flake: let
     flakesClosure = flakes:
       if flakes == []
@@ -67,18 +146,18 @@ in {
 
     text = ''
       echo "Unmounting:"
-      sudo umount --verbose ${documentsDir}
-      sudo umount --verbose ${secretsDir}
+      sudo umount --verbose ${documentsDir} || true
+      sudo umount --verbose ${secretsDir} || true
       echo
 
       echo "Closing crypted luks volumes."
-      sudo bash -c 'dmsetup ls --target crypt --exec "cryptsetup close"'
+      sudo bash -c 'dmsetup ls --target crypt --exec "cryptsetup close"' || true
 
       echo "Syncing."
-      sync
+      sync || true
 
       echo
-      echo "It is now safe to remove the airgap-data thumbdrive."
+      echo "If no unexpected errors are seen above, it is now safe to remove the airgap-data device."
     '';
   };
 }

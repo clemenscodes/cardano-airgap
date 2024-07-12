@@ -8,6 +8,8 @@
 }: let
   inherit
     (self.imageParameters)
+    embedFlakeDeps
+    etcFlakePath
     hostId
     hostName
     documentsDir
@@ -52,7 +54,7 @@ in {
   environment = {
     etc = {
       # Embed this flake source in the iso to re-use the disko or other configuration
-      flake.source = self.outPath;
+      ${etcFlakePath}.source = self.outPath;
 
       "signing-tool-config.json".source = builtins.toFile "signing-tool-config.json" (builtins.toJSON {
         inherit documentsDir secretsDir;
@@ -61,14 +63,16 @@ in {
 
     systemPackages = with pkgs; [
       (inputPkg "capkgs" "cardano-address-cardano-foundation-cardano-wallet-v2024-07-07-29e3aef")
-      (inputPkg "capkgs" "cardano-cli-input-output-hk-cardano-node-9-0-0-2820a63")
+      (inputPkg "capkgs" "\"cardano-cli:exe:cardano-cli\"-input-output-hk-cardano-cli-cardano-cli-9-0-0-1-33059ee")
       (inputPkg "credential-manager" "orchestrator-cli")
       (inputPkg "credential-manager" "signing-tool")
       (inputPkg "disko" "disko")
 
+      self.packages.${system}.format-airgap-data
       self.packages.${system}.signing-tool-with-config
       self.packages.${system}.unmount-airgap-data
 
+      cfssl
       cryptsetup
       glibc
       gnome.adwaita-icon-theme
@@ -77,10 +81,19 @@ in {
       lvm2
       neovim
       openssl
+      pwgen
+      smem
       sqlite-interactive
+      step-cli
       usbutils
+      util-linux
     ];
   };
+
+  # Used by starship for fonts
+  fonts.packages = with pkgs; [
+    (nerdfonts.override {fonts = ["FiraCode"];})
+  ];
 
   # Disable squashfs for testing only
   # Set the flake.nix `imageParameters.testImage = false;` when ready to build the distribution image
@@ -108,7 +121,60 @@ in {
   };
 
   programs = {
-    bash.enableCompletion = true;
+    bash = {
+      enableCompletion = true;
+      interactiveShellInit = ''
+        ${lib.getExe pkgs.nushell} -c \
+          '"Welcome to the Airgap Shell" | ansi gradient --fgstart "0xffffff" --fgend "0xffffff" --bgstart "0x0000ff" --bgend "0xff0000"'
+        echo
+        echo "Some commands available are:"
+        echo "  cardano-address"
+        echo "  cardano-cli"
+        echo "  format-airgap-data"
+        echo "  orchestrator-cli"
+        echo "  signing-tool"
+        echo "  signing-tool-with-config"
+        echo "  unmount-airgap-data"
+      '';
+    };
+
+    fzf = {
+      fuzzyCompletion = true;
+      keybindings = true;
+    };
+
+    starship = {
+      enable = true;
+      settings = {
+        git_commit = {
+          tag_disabled = false;
+          only_detached = false;
+        };
+        git_metrics = {
+          disabled = false;
+        };
+        memory_usage = {
+          disabled = false;
+          format = "via $symbol[\${ram_pct}]($style) ";
+          threshold = -1;
+        };
+        shlvl = {
+          disabled = false;
+          symbol = "↕";
+          threshold = -1;
+        };
+        status = {
+          disabled = false;
+          map_symbol = true;
+          pipestatus = true;
+        };
+        time = {
+          disabled = false;
+          format = "[\\[ $time \\]]($style) ";
+        };
+      };
+    };
+
     dconf.enable = true;
     gnupg.agent.enable = true;
   };
@@ -201,9 +267,13 @@ in {
   };
 
   system = {
-    # This works to enable disko builds within the image,
+    # This works to enable flake based disko builds within the image,
     # but adds significant eval time and size for image generation.
-    # extraDependencies = [(self.packages.${system}.flakeClosureRef self)];
+    #
+    # Alternatively, the disko builds can be done using the
+    # airgap-disko.nix configuration from within the image without
+    # requiring the flake closure dependencies.
+    extraDependencies = lib.mkIf embedFlakeDeps [(self.packages.${system}.flakeClosureRef self)];
 
     # To address build time warn
     stateVersion = lib.versions.majorMinor lib.version;

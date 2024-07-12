@@ -35,6 +35,7 @@
     nixpkgs,
     devenv,
     systems,
+    capkgs,
     credential-manager,
     disko,
     ...
@@ -45,24 +46,7 @@
     inherit (nixpkgs) lib;
 
     # General image parameters used throughout nix code
-    imageParameters = rec {
-      # Set to false when ready to generate and distrubte an image
-      testImage = true;
-
-      publicVolName = "public";
-      encryptedVolName = "encrypted";
-
-      documentsDir = "/run/media/${signingUser}/${publicVolName}";
-      secretsDir = "/run/media/${signingUser}/${encryptedVolName}";
-
-      hostId = "ffffffff";
-      hostName = "cc-airgap";
-
-      signingUser = "cc-signer";
-      signingUserUid = 1234;
-      signingUserGid = 100;
-      signingUserGroup = "users";
-    };
+    inherit (import ./image-parameters.nix) imageParameters;
 
     packages = forEachSystem (system: import ./packages.nix self system);
 
@@ -78,9 +62,11 @@
               packages = [
                 pkgs.coreutils
                 pkgs.cryptsetup
-                disko.packages.${system}.disko
+                capkgs.packages.${system}.cardano-address-cardano-foundation-cardano-wallet-v2024-07-07-29e3aef
+                capkgs.packages.${system}."\"cardano-cli:exe:cardano-cli\"-input-output-hk-cardano-cli-cardano-cli-9-0-0-1-33059ee"
                 credential-manager.packages.${system}.orchestrator-cli
                 credential-manager.packages.${system}.signing-tool
+                disko.packages.${system}.disko
                 self.packages.${system}.qemu-run-iso
               ];
 
