@@ -64,12 +64,17 @@ in {
 
       if [ "$DRY_RUN" = "false" ]; then
         echo "WARNING: Device $DEVICE is about to be completely wiped and formatted!"
+        echo "         Only proceed if you are sure you know what you are doing."
+        echo "         Otherwise, seek assistance instead."
+        echo
         read -p "Do you wish to proceed [yY]? " -n 1 -r
         echo
         if ! [[ $REPLY =~ ^[Yy]$ ]]; then
           echo "Aborting."
           exit
         fi
+        echo "Wiping and formatting $DEVICE starting in 10 seconds..."
+        sleep 10
       else
         echo "Dry run request detected -- no actual formatting actions will be carried out."
         echo "The final script path printed below can be reviewed prior to running for real."
@@ -136,7 +141,7 @@ in {
     ];
 
     text = ''
-      signing-tool --config-file /etc/signing-tool-config.json "$@"
+      signing-tool --config-file /etc/signing-tool-config.json "$@" || true
     '';
   };
 

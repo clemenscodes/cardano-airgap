@@ -1,7 +1,7 @@
 {
   imageParameters = rec {
     # Set to false when ready to generate and distribute an image
-    testImage = true;
+    testImage = false;
 
     # This will add significant eval time and size to the image,
     # but may fix a problem if a flake related nix operation
