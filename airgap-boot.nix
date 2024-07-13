@@ -19,8 +19,6 @@
     signingUserGroup
     testImage
     ;
-
-  inputPkg = input: pkg: self.inputs.${input}.packages.${system}.${pkg};
 in {
   imports = [(modulesPath + "/installer/cd-dvd/installation-cd-graphical-gnome.nix")];
 
@@ -61,33 +59,40 @@ in {
       });
     };
 
-    systemPackages = with pkgs; [
-      (inputPkg "capkgs" "cardano-address-cardano-foundation-cardano-wallet-v2024-07-07-29e3aef")
-      (inputPkg "capkgs" "\"cardano-cli:exe:cardano-cli\"-input-output-hk-cardano-cli-cardano-cli-9-0-0-1-33059ee")
-      (inputPkg "credential-manager" "orchestrator-cli")
-      (inputPkg "credential-manager" "signing-tool")
-      (inputPkg "disko" "disko")
+    systemPackages = with self.packages.${system};
+      [
+        bech32
+        cardano-address
+        cardano-cli
+        disko
+        format-airgap-data
+        orchestrator-cli
+        signing-tool
+        signing-tool-with-config
+        unmount-airgap-data
+      ]
+      ++ (with pkgs; [
+        cfssl
+        cryptsetup
+        glibc
+        gnome.adwaita-icon-theme
+        gnupg
+        jq
+        lvm2
+        neovim
+        openssl
+        pwgen
+        smem
+        sqlite-interactive
+        step-cli
+        usbutils
+        util-linux
+      ]);
 
-      self.packages.${system}.format-airgap-data
-      self.packages.${system}.signing-tool-with-config
-      self.packages.${system}.unmount-airgap-data
-
-      cfssl
-      cryptsetup
-      glibc
-      gnome.adwaita-icon-theme
-      gnupg
-      jq
-      lvm2
-      neovim
-      openssl
-      pwgen
-      smem
-      sqlite-interactive
-      step-cli
-      usbutils
-      util-linux
-    ];
+    variables = {
+      ENC_DIR = secretsDir;
+      PUB_DIR = documentsDir;
+    };
   };
 
   # Used by starship for fonts
@@ -119,6 +124,7 @@ in {
 
     enableIPv6 = lib.mkForce false;
     interfaces = lib.mkForce {};
+    networkmanager.enable = lib.mkForce false;
     useDHCP = lib.mkForce false;
     wireless.enable = lib.mkForce false;
   };
@@ -131,6 +137,7 @@ in {
           '"Welcome to the Airgap Shell" | ansi gradient --fgstart "0xffffff" --fgend "0xffffff" --bgstart "0x0000ff" --bgend "0xff0000"'
         echo
         echo "Some commands available are:"
+        echo "  bech32"
         echo "  cardano-address"
         echo "  cardano-cli"
         echo "  format-airgap-data"

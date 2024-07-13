@@ -4,11 +4,21 @@ self: system: let
   inherit (self.lib) concatMap concatStringsSep unique;
 
   pkgs = self.inputs.nixpkgs.legacyPackages.${system};
-in {
+  capkgs = self.inputs.capkgs.packages.${system};
+in rec {
+  # Inputs packages, collected here for easier re-use throughout the flake
+  inherit (self.inputs.credential-manager.packages.${system}) orchestrator-cli signing-tool;
+  inherit (self.inputs.disko.packages.${system}) disko;
+
+  bech32 = capkgs.bech32-input-output-hk-cardano-node-9-0-0-2820a63;
+  cardano-address = capkgs.cardano-address-cardano-foundation-cardano-wallet-v2024-07-07-29e3aef;
+  cardano-cli = capkgs."\"cardano-cli:exe:cardano-cli\"-input-output-hk-cardano-cli-cardano-cli-9-0-0-1-33059ee";
+
+  # Repo defined packages
   format-airgap-data = pkgs.writeShellApplication {
     name = "format-airgap-data";
     runtimeInputs = with pkgs; [
-      self.inputs.disko.packages.${system}.disko
+      disko
       usbutils
       util-linux
     ];
@@ -122,11 +132,10 @@ in {
         echo "Not passing through any host devices; see the README.md if you would like to do that."
       fi
 
-      # Don't allow qemu to network an airgapped machine test with `-nic none`
+      # To disallow a network nic, pass: -nic none
       qemu-kvm \
         -smp 2 \
         -m 4G \
-        -nic none \
         -drive file=result-iso,format=raw,if=none,media=cdrom,id=drive-cd1,readonly=on \
         -device ahci,id=achi0 \
         -device ide-cd,bus=achi0.0,drive=drive-cd1,id=cd1,bootindex=1 \
@@ -136,9 +145,7 @@ in {
 
   signing-tool-with-config = pkgs.writeShellApplication {
     name = "signing-tool-with-config";
-    runtimeInputs = [
-      self.inputs.credential-manager.packages.${system}.signing-tool
-    ];
+    runtimeInputs = [signing-tool];
 
     text = ''
       signing-tool --config-file /etc/signing-tool-config.json "$@" || true
