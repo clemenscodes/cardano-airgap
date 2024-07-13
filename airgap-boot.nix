@@ -66,6 +66,7 @@ in {
         cardano-cli
         disko
         format-airgap-data
+        menu
         orchestrator-cli
         signing-tool
         signing-tool-with-config
@@ -132,20 +133,7 @@ in {
   programs = {
     bash = {
       enableCompletion = true;
-      interactiveShellInit = ''
-        ${lib.getExe pkgs.nushell} -c \
-          '"Welcome to the Airgap Shell" | ansi gradient --fgstart "0xffffff" --fgend "0xffffff" --bgstart "0x0000ff" --bgend "0xff0000"'
-        echo
-        echo "Some commands available are:"
-        echo "  bech32"
-        echo "  cardano-address"
-        echo "  cardano-cli"
-        echo "  format-airgap-data"
-        echo "  orchestrator-cli"
-        echo "  signing-tool"
-        echo "  signing-tool-with-config"
-        echo "  unmount-airgap-data"
-      '';
+      interactiveShellInit = lib.getExe self.packages.${system}.menu;
     };
 
     fzf = {

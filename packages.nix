@@ -113,6 +113,29 @@ in rec {
   in
     pkgs.writeText "flake-closure" (concatStringsSep "\n" (flakesClosure [flake]) + "\n");
 
+  menu = pkgs.writeShellApplication {
+    name = "menu";
+    runtimeInputs = with pkgs; [nushell];
+
+    text = ''
+      nu -c \
+        '"Welcome to the Airgap Shell" | ansi gradient --fgstart "0xffffff" --fgend "0xffffff" --bgstart "0x0000ff" --bgend "0xff0000"'
+      echo
+      echo "Some commands available are:"
+      echo "  bech32"
+      echo "  cardano-address"
+      echo "  cardano-cli"
+      echo "  cfssl"
+      echo "  format-airgap-data"
+      echo "  menu"
+      echo "  orchestrator-cli"
+      echo "  signing-tool"
+      echo "  signing-tool-with-config"
+      echo "  step"
+      echo "  unmount-airgap-data"
+    '';
+  };
+
   qemu-run-iso = pkgs.writeShellApplication {
     name = "qemu-run-iso";
     runtimeInputs = with pkgs; [fd qemu_kvm];
@@ -155,12 +178,26 @@ in rec {
   unmount-airgap-data = pkgs.writeShellApplication {
     name = "unmount-airgap-data";
     runtimeInputs = with pkgs; [cryptsetup gnugrep util-linux];
+    bashOptions = ["errtrace" "errexit" "nounset" "pipefail"];
 
     text = ''
+      ERROR() {
+        echo
+        echo "ERROR: An error occurred trying to unmount."
+        echo "       Please check the text above, remedy"
+        echo "       the cause, and try again."
+        echo
+        echo "Also ensure:"
+        echo "  * No programs have files open on the airgap-data partitions"
+        echo "  * No shells have a working directory in an airgap-data partition"
+      }
+
+      trap 'ERROR' ERR
+
       UNMOUNT() {
         MOUNTPOINT="$1"
         if df | grep --quiet "$MOUNTPOINT"; then
-          sudo umount --verbose "$MOUNTPOINT" || true
+          sudo umount --verbose "$MOUNTPOINT"
         else
           echo "Not currently mounted: $MOUNTPOINT"
         fi
@@ -172,11 +209,11 @@ in rec {
       echo
 
       echo "Closing crypted luks volumes."
-      sudo bash -c 'dmsetup ls --target crypt --exec "cryptsetup close"' || true
+      sudo bash -c 'dmsetup ls --target crypt --exec "cryptsetup close"'
       echo
 
       echo "Syncing."
-      sync || true
+      sync
 
       echo
       echo "If no unexpected errors are seen above,"
