@@ -254,7 +254,7 @@ in {
     defaultUserShell = pkgs.bash;
     mutableUsers = false;
 
-    users.cc-signer = {
+    users.${signingUser} = {
       createHome = true;
       extraGroups = ["wheel"];
       group = signingUserGroup;
