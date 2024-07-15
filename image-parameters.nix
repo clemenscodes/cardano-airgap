@@ -18,9 +18,9 @@
     secretsDir = "/run/media/${signingUser}/${encryptedVolName}";
 
     hostId = "ffffffff";
-    hostName = "cc-airgap";
+    hostName = "cardano-airgap";
 
-    signingUser = "cc-signer";
+    signingUser = "airgap";
     signingUserUid = 1234;
     signingUserGid = 100;
     signingUserGroup = "users";
