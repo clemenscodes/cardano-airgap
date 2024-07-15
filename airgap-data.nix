@@ -1,13 +1,13 @@
 self: {device ? "/dev/disk/AIRGAP_DATA_DEVICE_UPDATE_ME", ...}: let
   inherit
     (self.imageParameters)
-    signingUserUid
-    signingUserGid
+    airgapUserUid
+    airgapUserGid
     publicVolName
     encryptedVolName
     ;
 
-  uidGid = "${toString signingUserUid}:${toString signingUserGid}";
+  uidGid = "${toString airgapUserUid}:${toString airgapUserGid}";
 in {
   disko.devices = {
     disk.main = {

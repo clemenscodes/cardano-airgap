@@ -14,10 +14,10 @@
     hostName
     documentsDir
     secretsDir
-    signingUser
-    signingUserUid
-    signingUserGroup
-    testImage
+    airgapUser
+    airgapUserUid
+    airgapUserGroup
+    prodImage
     ;
 in {
   imports = [(modulesPath + "/installer/cd-dvd/installation-cd-graphical-gnome.nix")];
@@ -102,8 +102,8 @@ in {
   ];
 
   # Disable squashfs for testing only
-  # Set the flake.nix `imageParameters.testImage = false;` when ready to build the distribution image
-  isoImage.squashfsCompression = lib.mkIf testImage ((lib.warn "Generating a testing only ISO with compression disabled") null);
+  # Set the flake.nix `imageParameters.prodImage = true;` when ready to build the distribution image to use image compression
+  isoImage.squashfsCompression = lib.mkIf (!prodImage) ((lib.warn "Generating a testing only ISO with compression disabled") null);
 
   nix = {
     extraOptions = ''
@@ -114,7 +114,7 @@ in {
     nixPath = ["nixpkgs=${pkgs.path}"];
     settings = {
       substituters = lib.mkForce [];
-      trusted-users = [signingUser];
+      trusted-users = [airgapUser];
     };
   };
 
@@ -178,7 +178,7 @@ in {
   };
 
   services = {
-    displayManager.autoLogin.user = lib.mkForce signingUser;
+    displayManager.autoLogin.user = lib.mkForce airgapUser;
 
     udev.extraRules = ''
       SUBSYSTEMS=="usb", ATTRS{idVendor}=="2581", ATTRS{idProduct}=="1b7c", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
@@ -228,8 +228,8 @@ in {
 
         [org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0]
         binding='<Primary><Alt>t'
-        command='gnome-terminal'
-        name='terminal'
+        command='kgx'
+        name='console'
 
         [org/gnome/settings-daemon/plugins/power]
         idle-dim=false
@@ -238,9 +238,6 @@ in {
 
         [org/gnome/shell]
         welcome-dialog-last-shown-version='41.2'
-
-        [org/gnome/terminal/legacy]
-        theme-variant='dark'
       '';
     in ''
       ${pkgs.dconf}/bin/dconf load / < ${dconfDefaults}
@@ -254,12 +251,12 @@ in {
     defaultUserShell = pkgs.bash;
     mutableUsers = false;
 
-    users.${signingUser} = {
+    users.${airgapUser} = {
       createHome = true;
       extraGroups = ["wheel"];
-      group = signingUserGroup;
-      home = "/home/${signingUser}";
-      uid = signingUserUid;
+      group = airgapUserGroup;
+      home = "/home/${airgapUser}";
+      uid = airgapUserUid;
       isNormalUser = true;
     };
   };

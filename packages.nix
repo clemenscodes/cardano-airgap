@@ -94,7 +94,6 @@ in rec {
       sudo disko \
       -m disko \
       /etc/${etcFlakePath}/airgap-disko.nix \
-      --arg substitute false \
       "$@"
     '';
   };
@@ -128,7 +127,9 @@ in rec {
       echo "  cfssl"
       echo "  format-airgap-data"
       echo "  menu"
+      echo "  openssl"
       echo "  orchestrator-cli"
+      echo "  pwgen"
       echo "  signing-tool"
       echo "  signing-tool-with-config"
       echo "  step"
@@ -156,6 +157,7 @@ in rec {
       fi
 
       # To disallow a network nic, pass: -nic none
+      # See README.md for additional args to pass through a host device
       qemu-kvm \
         -smp 2 \
         -m 4G \
@@ -171,7 +173,13 @@ in rec {
     runtimeInputs = [signing-tool];
 
     text = ''
-      signing-tool --config-file /etc/signing-tool-config.json "$@" || true
+      signing-tool --config-file /etc/signing-tool-config.json "$@" &> /dev/null || {
+        echo "ERROR: Has the airgap-data device already been mounted?"
+        echo "       If not, once the airgap-data device is mounted, try again."
+        echo
+        echo "If needed, debug output can be seen by running:"
+        echo "  signing-tool --config-file /etc/signing-tool-config.json"
+      }
     '';
   };
 
