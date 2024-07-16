@@ -71,12 +71,13 @@ in {
         signing-tool
         signing-tool-with-config
         unmount-airgap-data
+        shutdown
       ]
       ++ (with pkgs; [
         cfssl
         cryptsetup
         glibc
-        gnome.adwaita-icon-theme
+        gnome3.adwaita-icon-theme
         gnupg
         jq
         lvm2

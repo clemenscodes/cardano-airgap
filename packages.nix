@@ -130,10 +130,21 @@ in rec {
       echo "  openssl"
       echo "  orchestrator-cli"
       echo "  pwgen"
+      echo "  shutdown"
       echo "  signing-tool"
       echo "  signing-tool-with-config"
       echo "  step"
       echo "  unmount-airgap-data"
+    '';
+  };
+
+  shutdown = pkgs.writeShellApplication {
+    name = "shutdown";
+    runtimeInputs = with pkgs; [unmount-airgap-data];
+
+    text = ''
+      unmount-airgap-data
+      systemctl poweroff -i
     '';
   };
 

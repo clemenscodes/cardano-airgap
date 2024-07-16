@@ -557,16 +557,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1720816736,
-        "narHash": "sha256-MKD9J8Ef6LmpitjD5mK0C9tZzB1UyWCVwpeyJR6LDnI=",
+        "lastModified": 1721163103,
+        "narHash": "sha256-pPZwoeijoXo7Wlqc2Pde6LXRUObFtpQm4i9DpDWOirg=",
         "owner": "IntersectMBO",
         "repo": "credential-manager",
-        "rev": "82815abb19e8d2334dbe8888260b6640fa769025",
+        "rev": "36798b55f65a44c0554c473aa3ba7f0246c144c1",
         "type": "github"
       },
       "original": {
         "owner": "IntersectMBO",
-        "ref": "signing-tool",
         "repo": "credential-manager",
         "type": "github"
       }

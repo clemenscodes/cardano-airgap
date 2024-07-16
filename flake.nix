@@ -4,7 +4,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
 
     # Required image signing tooling
-    credential-manager.url = "github:IntersectMBO/credential-manager/signing-tool";
+    credential-manager.url = "github:IntersectMBO/credential-manager";
     systems.url = "github:nix-systems/default";
 
     # For easy language and hook support
