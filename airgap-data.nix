@@ -20,7 +20,7 @@ in {
             size = "8G";
             content = {
               type = "filesystem";
-              format = "ext4";
+              format = "exfat";
               extraArgs = ["-L ${publicVolName}" "-E root_owner=${uidGid}"];
             };
           };
