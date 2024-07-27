@@ -66,6 +66,7 @@
                 orchestrator-cli
                 qemu-run-iso
                 signing-tool
+                pkgs.ventoy
               ];
 
               # https://devenv.sh/reference/options/

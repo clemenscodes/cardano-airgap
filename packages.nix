@@ -12,7 +12,7 @@ in rec {
 
   bech32 = capkgs.bech32-input-output-hk-cardano-node-9-0-0-2820a63;
   cardano-address = capkgs.cardano-address-cardano-foundation-cardano-wallet-v2024-07-07-29e3aef;
-  cardano-cli = capkgs."\"cardano-cli:exe:cardano-cli\"-input-output-hk-cardano-cli-cardano-cli-9-0-0-1-33059ee";
+  cardano-cli = capkgs."cardano-cli-input-output-hk-cardano-node-9-1-0-176f99e";
 
   # Repo defined packages
   format-airgap-data = pkgs.writeShellApplication {
