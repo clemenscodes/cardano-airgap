@@ -89,6 +89,7 @@ in {
         step-cli
         usbutils
         util-linux
+        kitty
       ]);
 
     variables = {

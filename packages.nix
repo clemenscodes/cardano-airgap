@@ -10,9 +10,9 @@ in rec {
   inherit (self.inputs.credential-manager.packages.${system}) orchestrator-cli signing-tool;
   inherit (self.inputs.disko.packages.${system}) disko;
 
-  bech32 = capkgs.bech32-input-output-hk-cardano-node-9-0-0-2820a63;
-  cardano-address = capkgs.cardano-address-cardano-foundation-cardano-wallet-v2024-07-07-29e3aef;
-  cardano-cli = capkgs."cardano-cli-input-output-hk-cardano-node-9-1-0-176f99e";
+  bech32 = capkgs.bech32-input-output-hk-cardano-node-10-1-3-36871ba;
+  cardano-address = capkgs.cardano-address-cardano-foundation-cardano-wallet-v2024-11-18-9eb5f59;
+  cardano-cli = capkgs.cardano-cli-input-output-hk-cardano-node-10-1-3-36871ba;
 
   # Repo defined packages
   format-airgap-data = pkgs.writeShellApplication {
@@ -140,7 +140,7 @@ in rec {
 
   shutdown = pkgs.writeShellApplication {
     name = "shutdown";
-    runtimeInputs = with pkgs; [unmount-airgap-data];
+    runtimeInputs = [unmount-airgap-data];
 
     text = ''
       unmount-airgap-data
@@ -150,7 +150,7 @@ in rec {
 
   qemu-run-iso = pkgs.writeShellApplication {
     name = "qemu-run-iso";
-    runtimeInputs = with pkgs; [fd qemu_kvm];
+    runtimeInputs = with pkgs; [fd qemu_kvm pipewire pipewire.jack];
 
     text = ''
       if fd --type file --has-results 'nixos-.*\.iso' result/iso 2> /dev/null; then
@@ -169,7 +169,7 @@ in rec {
 
       # To disallow a network nic, pass: -nic none
       # See README.md for additional args to pass through a host device
-      qemu-kvm \
+      LD_LIBRARY_PATH="${pkgs.pipewire.jack}/lib" qemu-kvm \
         -smp 2 \
         -m 4G \
         -drive file=result-iso,format=raw,if=none,media=cdrom,id=drive-cd1,readonly=on \
